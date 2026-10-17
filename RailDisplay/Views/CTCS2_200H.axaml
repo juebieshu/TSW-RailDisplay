@@ -1,0 +1,378 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:controls="using:RailDisplay.Controls.CTCS"
+                xmlns:shared="using:RailDisplay.Controls"
+                xmlns:vm="using:RailDisplay.ViewModels.CTCS"
+                xmlns:models="using:RailDisplay.Models.CTCS"
+                x:DataType="vm:CtcsViewModel"
+                x:Class="RailDisplay.Views.CTCS2_200H"
+                IsHitTestVisible="False" Focusable="False">
+    
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Assets/Themes/CTCS/CTCSColors.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="{x:Type models:CtcsTextMessageRow}" x:DataType="models:CtcsTextMessageRow">
+            <Border Classes="messageConfirmation" Classes.blink="{Binding ShowConfirmationBorder}"
+                    BorderThickness="1" Margin="1" Padding="2,0">
+                <TextBlock Classes="messageText" Classes.latest="{Binding IsWhite}"
+                           FontFamily="SimSun" FontSize="12" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis">
+                    <Run Text="{Binding TimeText}" FontFamily="Arial" FontSize="11"/><Run Text="{Binding Content}"/>
+                </TextBlock>
+            </Border>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <UserControl.Styles>
+        <Style Selector="Border.emptyFunctionKey">
+            <Setter Property="Background" Value="{DynamicResource BlackGrayBrush}"/>
+        </Style>
+        <Style Selector="Border.interactionPageTitle">
+            <Setter Property="Background" Value="{DynamicResource BlackGrayBrush}"/>
+        </Style>
+        <Style Selector="Border.brakeWarning">
+            <Setter Property="Background" Value="{DynamicResource GrayBrush}"/>
+        </Style>
+        <Style Selector="Border.brakeWarning.yellow">
+            <Setter Property="Background" Value="{DynamicResource YellowBrush}"/>
+        </Style>
+        <Style Selector="Border.brakeWarning.orange">
+            <Setter Property="Background" Value="{DynamicResource OrangeBrush}"/>
+        </Style>
+        <Style Selector="Border.brakeWarning.red">
+            <Setter Property="Background" Value="{DynamicResource RedBrush}"/>
+        </Style>
+        <Style Selector="Border.messageConfirmation">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border.messageConfirmation.blink">
+            <Setter Property="BorderBrush" Value="{DynamicResource YellowBrush}"/>
+        </Style>
+        <Style Selector="TextBlock.messageText">
+            <Setter Property="Foreground" Value="{DynamicResource GrayBrush}"/>
+        </Style>
+        <Style Selector="TextBlock.messageText.latest">
+            <Setter Property="Foreground" Value="{DynamicResource WhiteBrush}"/>
+        </Style>
+        <Style Selector="Path.textScrollArrow">
+            <Setter Property="Fill" Value="{DynamicResource BlackGrayBrush}"/>
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="39"/>
+            <Setter Property="Stretch" Value="Fill"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Path.textScrollArrow.scrollable">
+            <Setter Property="Fill" Value="{DynamicResource WhiteBrush}"/>
+        </Style>
+        <Style Selector="Border.textMessage > ContentControl">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+        </Style>
+        <!-- 每个单元只绘制右、下边，相邻分隔线保持 1px。 -->
+        <Style Selector="Border.region">
+            <Setter Property="BorderBrush" Value="{DynamicResource DisabledButtonBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        </Style>
+        <Style Selector="Canvas#D > Border.region">
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Canvas#F > Border.region">
+            <Setter Property="BorderThickness" Value="0,0,2,2"/>
+        </Style>
+        <Style Selector="Border#E6ToE10, Canvas#E11ToE15 > Border.region, Canvas#E24ToE25 > Border.region">
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Border#C5, Border#C6, Border#C2, Border#C3, Border#E16b1, Border#E16c">
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+        <Style Selector="controls|SpeedScale">
+            <Setter Property="LightBandBrush" Value="{DynamicResource GrayBrush}"/>
+            <Setter Property="PointerBrush" Value="{DynamicResource GrayBrush}"/>
+        </Style>
+        <Style Selector="controls|SpeedScale.permittedYellow">
+            <Setter Property="LightBandBrush" Value="{DynamicResource YellowBrush}"/>
+        </Style>
+        <Style Selector="controls|SpeedScale.targetMonitoring">
+            <Setter Property="PointerBrush" Value="{DynamicResource YellowBrush}"/>
+        </Style>
+        <Style Selector="controls|SpeedScale.permittedExceeded">
+            <Setter Property="PointerBrush" Value="{DynamicResource OrangeBrush}"/>
+        </Style>
+        <Style Selector="controls|SpeedScale.sbiExceeded">
+            <Setter Property="PointerBrush" Value="{DynamicResource RedBrush}"/>
+        </Style>
+        <Style Selector="TextBlock.speedValue">
+            <Setter Property="Foreground" Value="{DynamicResource BlackBrush}"/>
+        </Style>
+        <Style Selector="TextBlock.speedValue.sbiExceeded">
+            <Setter Property="Foreground" Value="{DynamicResource WhiteBrush}"/>
+        </Style>
+        <!-- F 区功能键与 B7 模式标签：优先幼圆，回退宋体。 -->
+        <Style Selector="Canvas#F TextBlock, Border#B7 TextBlock">
+            <Setter Property="FontFamily" Value="YouYuan, SimSun"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Canvas#F TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+    </UserControl.Styles>
+    
+    <shared:PixelDisplay x:Name="DisplayRenderer" UsePixelRendering="True" RenderResolution="640,480">
+        <Canvas Width="640" Height="480" Background="{DynamicResource BlackBrush}">
+            <!-- A：左上状态区，54 × 300。 -->
+            <Canvas Name="A" Width="54" Height="300">
+                <Border Name="A1" Classes="region" Width="54" Height="54">
+                    <Canvas Margin="0,0,-1,-1">
+                        <Border x:Name="BrakeWarningIcon" Classes="brakeWarning"
+                                Width="{Binding BrakeWarning.Size}" Height="{Binding BrakeWarning.Size}"
+                                Canvas.Left="{Binding BrakeWarning.Offset}" Canvas.Top="{Binding BrakeWarning.Offset}"
+                                Classes.yellow="{Binding BrakeWarning.IsYellow}"
+                                Classes.orange="{Binding BrakeWarning.IsOrange}"
+                                Classes.red="{Binding BrakeWarning.IsRed}"/>
+                    </Canvas>
+                </Border>
+                <Border Name="A2" Classes="region" Canvas.Top="54" Width="54" Height="222">
+                    <Canvas>
+                        <controls:TargetDistanceScale x:Name="TargetDistanceRuler" Canvas.Top="42" Canvas.Right="8"
+                                                      Width="50" Height="172"
+                                                      TargetDistance="{Binding Data.TargetDistance}"
+                                                      Foreground="{DynamicResource WhiteBrush}"
+                                                      IsVisible="{Binding ShowTargetDistance}"/>
+                        <TextBlock x:Name="TargetDistanceValue" Width="53" Height="20" Canvas.Top="20" Canvas.Right="6"
+                                   Text="{Binding TargetDistanceText}" FontFamily="Arial" FontSize="16"
+                                   Foreground="{DynamicResource WhiteBrush}" TextAlignment="Right"/>
+                    </Canvas>
+                </Border>
+                <Border Name="A3" Classes="region" Canvas.Top="276" Width="54" Height="24" />
+            </Canvas>
+
+            <!-- B：280 × 300。 -->
+            <!-- B：速度表区域 -->
+            <Border Name="B"
+                    Classes="region"
+                    Canvas.Left="54"
+                    Width="280"
+                    Height="300">
+
+                <Canvas Width="280" Height="300" Margin="0,0,-1,-1">
+                    <controls:SpeedScale
+                        x:Name="SpeedDial"
+                        Width="280"
+                        Height="300"
+                        Diameter="248"
+                        Speed="{Binding Data.Speed}"
+                        TargetSpeed="{Binding Data.TargetSpeed}"
+                        PermittedSpeed="{Binding Data.PermittedSpeed}"
+                        ShowCsg="{Binding ShowCsg}"
+                        ShowLightBand="{Binding ShowLightBand}"
+                        WarningBandEndSpeed="{Binding WarningBandEndSpeed}"
+                        Classes.permittedYellow="{Binding IsPermittedBandYellow}"
+                        Classes.targetMonitoring="{Binding IsTargetMonitoring}"
+                        Classes.permittedExceeded="{Binding IsPermittedExceeded}"
+                        Classes.sbiExceeded="{Binding IsSbiExceeded}"
+                        BackgroundBandBrush="{DynamicResource SpeedBandBackgroundBrush}"/>
+
+                    <Border Canvas.Left="115" Canvas.Top="125"
+                            Width="50" Height="50" CornerRadius="25"
+                            Background="{Binding #SpeedDial.PointerBrush}">
+                        <TextBlock Text="{Binding Data.Speed, StringFormat={}{0:0}}"
+                                   Classes="speedValue"
+                                   Classes.sbiExceeded="{Binding IsSbiExceeded}"
+                                   FontFamily="Arial" FontSize="20" FontWeight="Bold"
+                                   TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- 两端贴边，中间三格共 108px，整体居中。 -->
+                    <Border Name="B3" Classes="region" Canvas.Top="264"
+                            Width="36" Height="36" BorderThickness="0,1,1,1"/>
+                    <Border Name="B4" Classes="region" Canvas.Left="86" Canvas.Top="264"
+                            Width="36" Height="36" BorderThickness="1"/>
+                    <Border Name="B5" Classes="region" Canvas.Left="122" Canvas.Top="264"
+                            Width="36" Height="36" BorderThickness="0,1,1,1"/>
+                    <Border Name="B6" Classes="region" Canvas.Left="158" Canvas.Top="264"
+                            Width="36" Height="36" BorderThickness="0,1,1,1"/>
+                    <Border Name="B7" Classes="region" Canvas.Left="244" Canvas.Top="264"
+                            Width="36" Height="36" BorderThickness="1">
+                        <TextBlock Text="{Binding ControlModeShortName}"/>
+                    </Border>
+                </Canvas>
+
+            </Border>
+
+            <Canvas Name="C" Canvas.Top="300" Width="334" Height="54" ZIndex="2">
+                <Canvas Name="CContainer" Width="54" Height="54">
+                    <Border Name="C8" Classes="region" Width="54" Height="27">
+                        <TextBlock Text="{Binding CurrentLevelName}"
+                                   FontFamily="Arial" FontSize="14" FontWeight="Bold"
+                                   Foreground="{DynamicResource WhiteBrush}"
+                                   TextAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <Border Name="C9" Classes="region" Canvas.Top="27" Width="54" Height="27"
+                            Background="{DynamicResource BlackBrush}">
+                        <controls:BrakeIndicator BrakeLevel="{Binding BrakeLevel}"
+                                                 RedBrush="{DynamicResource RedBrush}"
+                                                 BlackBrush="{DynamicResource BlackBrush}"/>
+                    </Border>
+                </Canvas>
+                <Border Name="C5" Classes="region" Canvas.Left="54" Width="35" Height="54" />
+                <Border Name="C6" Classes="region" Canvas.Left="89" Width="35" Height="54" />
+                <Border Name="C7" Classes="region" Canvas.Left="124" Width="35" Height="54" />
+                <Border Name="C1" Classes="region" Canvas.Left="159" Width="70" Height="54" />
+                <Border Name="C2" Classes="region" Canvas.Left="229" Width="35" Height="54" />
+                <Border Name="C3" Classes="region" Canvas.Left="264" Width="35" Height="54" />
+                <Border Name="C4" Classes="region" Canvas.Left="299" Width="35" Height="54" />
+            </Canvas>
+
+            <!-- D：右上区域，244 × 300。 -->
+            <Canvas Name="D" Canvas.Left="334" Width="244" Height="300">
+                <Border Name="D6" Classes="region" Classes.interactionPageTitle="{Binding ShowD6PageTitle}"
+                        Width="244" Height="50">
+                    <TextBlock Text="{Binding D6PageTitle}" FontFamily="SimSun" FontSize="16"
+                               Foreground="{DynamicResource WhiteBrush}"
+                               TextAlignment="Center" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                </Border>
+                <Border Name="D8" Classes="region" Canvas.Top="50" Width="244" Height="5" />
+                <Border Name="D7" Classes="region" Canvas.Top="55" Width="244" Height="150"
+                        Background="{DynamicResource MRSPBackgroundBrush}"
+                        IsVisible="{Binding ShowDistanceScale}"/>
+                <Border Name="D5" Classes="region" Canvas.Top="205" Width="244" Height="15" />
+                <Border Name="D4" Classes="region" Canvas.Top="220" Width="244" Height="20" />
+                <Border Name="D3" Classes="region" Canvas.Top="240" Width="244" Height="20" />
+                <Border Name="D2" Classes="region" Canvas.Top="260" Width="244" Height="20" />
+                <Border Name="D1" Classes="region" Canvas.Top="280" Width="244" Height="20"/>
+                <!-- 横线画至边框内侧；竖线在控件内单独保留 1px 空白。 -->
+                <controls:DistanceScale x:Name="DistanceRuler" Canvas.Top="55" Width="243" Height="245"
+                                        MaximumDistance="{Binding MaximumDisplayDistance}"
+                                        Foreground="{DynamicResource WhiteBrush}"
+                                        GridBrush="{DynamicResource BlackGrayBrush}"
+                                        IsVisible="{Binding ShowDistanceScale}"
+                                        IsHitTestVisible="False"/>
+                <!-- 左边界沿用 B 区右边框，避免相邻边框叠加。 -->
+                <Border Width="244" Height="300"
+                        BorderBrush="{DynamicResource DisabledButtonBrush}"
+                        BorderThickness="0,1,1,1"
+                        IsHitTestVisible="False"/>
+            </Canvas>
+
+            <!-- E：下方区域，578 × 180。 -->
+            <Canvas Name="E" Canvas.Top="300" Width="578" Height="180" ZIndex="1">
+                <Border Name="E6ToE10" Classes="region" Canvas.Left="334" Width="244" Height="50" />
+                <!-- E6～E15 共用外框，上、左边界沿用相邻单元的边框。 -->
+                <Border Canvas.Left="334" Width="244" Height="100"
+                        BorderBrush="{DynamicResource DisabledButtonBrush}"
+                        BorderThickness="0,0,1,1"
+                        IsHitTestVisible="False" ZIndex="1"/>
+
+                <Canvas Name="E1ToE5" Canvas.Top="54" Width="54" Height="126">
+                    <Border Name="E3" Classes="region" Width="54" Height="36" />
+                    <Border Name="E4" Classes="region" Canvas.Top="36" Width="54" Height="30" />
+                    <Border Name="E5" Classes="region" Canvas.Top="66" Width="54" Height="30" />
+                    <Border Name="E1" Classes="region" Canvas.Top="96" Width="54" Height="30" />
+                </Canvas>
+
+                <Canvas Name="E19ToE23" Canvas.Left="54" Canvas.Top="54" Width="234" Height="126">
+                    <Border Name="E19" Classes="region textMessage" Width="234" Height="25">
+                        <ContentControl Content="{Binding TextLine1}"/>
+                    </Border>
+                    <Border Name="E20" Classes="region textMessage" Canvas.Top="25" Width="234" Height="25">
+                        <ContentControl Content="{Binding TextLine2}"/>
+                    </Border>
+                    <Border Name="E21" Classes="region textMessage" Canvas.Top="50" Width="234" Height="25">
+                        <ContentControl Content="{Binding TextLine3}"/>
+                    </Border>
+                    <Border Name="E22" Classes="region textMessage" Canvas.Top="75" Width="234" Height="25">
+                        <ContentControl Content="{Binding TextLine4}"/>
+                    </Border>
+                    <Border Name="E23" Classes="region" Canvas.Top="100" Width="234" Height="26" />
+                </Canvas>
+
+                <Canvas Name="E24ToE25" Canvas.Left="288" Canvas.Top="54" Width="46" Height="126">
+                    <Border Name="E24" Classes="region" Width="46" Height="63"
+                            Background="{DynamicResource BlackBrush}">
+                        <Path Classes="textScrollArrow" Classes.scrollable="{Binding CanScrollTextUp}"
+                              Data="M13,0 L26,13 L18,13 L18,39 L8,39 L8,13 L0,13 Z"/>
+                    </Border>
+                    <Border Name="E25" Classes="region" Canvas.Top="63" Width="46" Height="63"
+                            Background="{DynamicResource BlackBrush}">
+                        <Path Classes="textScrollArrow" Classes.scrollable="{Binding CanScrollTextDown}"
+                              Data="M8,0 L18,0 L18,26 L26,26 L13,39 L0,26 L8,26 Z"/>
+                    </Border>
+                    <Border Width="46" Height="126"
+                            BorderBrush="{DynamicResource DisabledButtonBrush}"
+                            BorderThickness="0,0,1,1"
+                            IsHitTestVisible="False"/>
+                </Canvas>
+
+                <Canvas Name="E11ToE17" Canvas.Left="334" Canvas.Top="50" Width="244" Height="130">
+                    <Canvas Name="E11ToE15" Width="244" Height="50">
+                        <Border Name="E11" Classes="region" Width="48.8" Height="50" />
+                        <Border Name="E12" Classes="region" Canvas.Left="48.8" Width="48.8" Height="50" />
+                        <Border Name="E13" Classes="region" Canvas.Left="97.6" Width="48.8" Height="50" />
+                        <Border Name="E14" Classes="region" Canvas.Left="146.4" Width="48.8" Height="50" />
+                        <Border Name="E15" Classes="region" Canvas.Left="195.2" Width="48.8" Height="50" />
+                    </Canvas>
+                    <Canvas Name="E16ToE17" Canvas.Top="50" Width="244" Height="80">
+                        <Border Name="E16a" Classes="region" Width="65" Height="80" />
+                        <Canvas Name="E16bToD" Canvas.Left="65" Width="114" Height="80">
+                            <Border Name="E16b1" Classes="region" Width="57" Height="40" />
+                            <Border Name="E16b2" Classes="region" Canvas.Left="57" Width="57" Height="40" />
+                            <Border Name="E16c" Classes="region" Canvas.Top="40" Width="57" Height="40" />
+                            <Border Name="E16d" Classes="region" Canvas.Left="57" Canvas.Top="40" Width="57" Height="40" />
+                        </Canvas>
+                        <Border Name="E17" Classes="region" Canvas.Left="179" Width="65" Height="80">
+                            <StackPanel VerticalAlignment="Center" Spacing="8">
+                                <TextBlock Text="时间日期" FontFamily="SimSun" FontSize="12"
+                                           Foreground="{DynamicResource WhiteBrush}" TextAlignment="Center"/>
+                                <TextBlock Text="{Binding CurrentTimeText}" FontFamily="Arial" FontSize="12"
+                                           Foreground="{DynamicResource WhiteBrush}" TextAlignment="Center"/>
+                                <TextBlock Text="{Binding CurrentDateText}" FontFamily="Arial" FontSize="12"
+                                           Foreground="{DynamicResource WhiteBrush}" TextAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Canvas>
+                </Canvas>
+            </Canvas>
+
+            <!-- F：最右侧八个区域，每格 62 × 60。 -->
+            <Canvas Name="F" Canvas.Left="578" Width="62" Height="480">
+                <Border Name="F1" Classes="region" Classes.emptyFunctionKey="{Binding FunctionKeys[0].IsEmpty}" Width="62" Height="60">
+                    <TextBlock Text="{Binding FunctionKeys[0].Label}" TextWrapping="Wrap"/>
+                </Border>
+                <Border Name="F2" Classes="region" Classes.emptyFunctionKey="{Binding FunctionKeys[1].IsEmpty}" Canvas.Top="60" Width="62" Height="60">
+                    <TextBlock Text="{Binding FunctionKeys[1].Label}" TextWrapping="Wrap"/>
+                </Border>
+                <Border Name="F3" Classes="region" Classes.emptyFunctionKey="{Binding FunctionKeys[2].IsEmpty}" Canvas.Top="120" Width="62" Height="60">
+                    <TextBlock Text="{Binding FunctionKeys[2].Label}" TextWrapping="Wrap"/>
+                </Border>
+                <Border Name="F4" Classes="region" Classes.emptyFunctionKey="{Binding FunctionKeys[3].IsEmpty}" Canvas.Top="180" Width="62" Height="60">
+                    <TextBlock Text="{Binding FunctionKeys[3].Label}" TextWrapping="Wrap"/>
+                </Border>
+                <Border Name="F5" Classes="region" Classes.emptyFunctionKey="{Binding FunctionKeys[4].IsEmpty}" Canvas.Top="240" Width="62" Height="60">
+                    <TextBlock Text="{Binding FunctionKeys[4].Label}" TextWrapping="Wrap"/>
+                </Border>
+                <Border Name="F6" Classes="region" Classes.emptyFunctionKey="{Binding FunctionKeys[5].IsEmpty}" Canvas.Top="300" Width="62" Height="60">
+                    <TextBlock Text="{Binding FunctionKeys[5].Label}" TextWrapping="Wrap"/>
+                </Border>
+                <Border Name="F7" Classes="region" Classes.emptyFunctionKey="{Binding FunctionKeys[6].IsEmpty}" Canvas.Top="360" Width="62" Height="60">
+                    <TextBlock Text="{Binding FunctionKeys[6].Label}" TextWrapping="Wrap"/>
+                </Border>
+                <Border Name="F8" Classes="region" Classes.emptyFunctionKey="{Binding FunctionKeys[7].IsEmpty}" Canvas.Top="420" Width="62" Height="60">
+                    <TextBlock Text="{Binding FunctionKeys[7].Label}" TextWrapping="Wrap"/>
+                </Border>
+            </Canvas>
+        </Canvas>
+    </shared:PixelDisplay>
+</UserControl>

@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Basic Colors -->
+    <Color x:Key="Black">#000000</Color>
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Red">#BF0002</Color>
+    <Color x:Key="Yellow">#DFDF00</Color>
+    <Color x:Key="Orange">#EA9100</Color>
+    <Color x:Key="Gray">#C3C3C3</Color>
+    <Color x:Key="MiddleGray">#969696</Color>
+    <Color x:Key="BlackGray">#555555</Color>
+    <Color x:Key="Blue">#0A0F50</Color>
+    <Color x:Key="Green">#00FF00</Color>
+
+    <!-- Background Colors -->
+    <Color x:Key="BackgroundColor">#031122</Color>
+    <Color x:Key="ActiveButtonColor">#14112F</Color>
+    <Color x:Key="DisabledButtonColor">#282828</Color>
+    <Color x:Key="MRSPColor">#0000C8</Color>
+    <Color x:Key="MRSPBackgroundColor">#0A1846</Color>
+    <Color x:Key="InputBackgroundColor">#0A0F3C</Color>
+    <Color x:Key="InputTitleBackgroundColor">#555555</Color>
+
+    <!-- Basic Brushes -->
+    <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}"/>
+    <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
+    <SolidColorBrush x:Key="RedBrush" Color="{StaticResource Red}"/>
+    <SolidColorBrush x:Key="YellowBrush" Color="{StaticResource Yellow}"/>
+    <SolidColorBrush x:Key="OrangeBrush" Color="{StaticResource Orange}"/>
+    <SolidColorBrush x:Key="GrayBrush" Color="{StaticResource Gray}"/>
+    <SolidColorBrush x:Key="MiddleGrayBrush" Color="{StaticResource MiddleGray}"/>
+    <SolidColorBrush x:Key="BlackGrayBrush" Color="{StaticResource BlackGray}"/>
+    <SolidColorBrush x:Key="BlueBrush" Color="{StaticResource Blue}"/>
+    <SolidColorBrush x:Key="GreenBrush" Color="{StaticResource Green}"/>
+
+    <!-- Background Brushes -->
+    <SolidColorBrush x:Key="SpeedLightBandBrush" Color="{StaticResource Gray}"/>
+    <SolidColorBrush x:Key="SpeedBandBackgroundBrush" Color="{StaticResource BlackGray}"/>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
+    <SolidColorBrush x:Key="ActiveButtonBrush" Color="{StaticResource ActiveButtonColor}"/>
+    <SolidColorBrush x:Key="DisabledButtonBrush" Color="{StaticResource DisabledButtonColor}"/>
+    <SolidColorBrush x:Key="MRSPBrush" Color="{StaticResource MRSPColor}"/>
+    <SolidColorBrush x:Key="MRSPBackgroundBrush" Color="{StaticResource MRSPBackgroundColor}"/>
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="{StaticResource InputBackgroundColor}"/>
+    <SolidColorBrush x:Key="InputTitleBackgroundBrush" Color="{StaticResource InputTitleBackgroundColor}"/>
+
+</ResourceDictionary>

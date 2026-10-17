@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RailDisplay.Debug.ViewModels"
+        x:Class="RailDisplay.Debug.Views.DebugSettingsWindow"
+        x:DataType="vm:DebugSettingsViewModel"
+        Title="Debug Setting" Width="440" Height="280" MinWidth="400" MinHeight="280"
+        RequestedThemeVariant="Light" Background="#F2F2F2">
+    <Window.Resources>
+        <CornerRadius x:Key="ControlCornerRadius">0</CornerRadius>
+    </Window.Resources>
+    <Grid Margin="24" RowDefinitions="Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*"
+          RowSpacing="12" ColumnSpacing="16">
+        <TextBlock Text="Target speed (km/h)" VerticalAlignment="Center" />
+        <TextBox Grid.Column="1" Text="{Binding TargetSpeed, Mode=TwoWay}"
+                 Watermark="Not set" AutomationProperties.Name="Target speed" />
+        <TextBlock Grid.Row="1" Text="Permitted speed (km/h)" VerticalAlignment="Center" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PermittedSpeed, Mode=TwoWay}"
+                 AutomationProperties.Name="Permitted speed" />
+        <TextBlock Grid.Row="2" Text="Target distance (m)" VerticalAlignment="Center" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TargetDistance, Mode=TwoWay}"
+                 Watermark="Not set" AutomationProperties.Name="Target distance" />
+        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding Error}"
+                   Foreground="Red" TextWrapping="Wrap" />
+        <Button Grid.Row="4" Grid.Column="1" Content="Apply" Command="{Binding ApplyCommand}"
+                HorizontalAlignment="Right" MinWidth="80" />
+    </Grid>
+</Window>

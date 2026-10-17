@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <VersionPrefix>0.0.14</VersionPrefix>
+    <VersionSuffix>alpha</VersionSuffix>
+    <InformationalVersion>$(VersionSuffix)-$(VersionPrefix)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+</Project>

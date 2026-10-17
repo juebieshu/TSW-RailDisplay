@@ -1,0 +1,134 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RailDisplay.Debug.ViewModels"
+        xmlns:ctcs="using:RailDisplay.Core.Models.CTCS"
+        x:Class="RailDisplay.Debug.Views.DebugWindow"
+        x:DataType="vm:DebugViewModel"
+        Title=""
+        Width="520" Height="520" MinWidth="440" MinHeight="460"
+        RequestedThemeVariant="Light" Background="#F2F2F2" Foreground="#202020">
+    <Window.Resources>
+        <SolidColorBrush x:Key="DebugBorderBrush" Color="#C8C8C8" />
+        <SolidColorBrush x:Key="DebugMutedBrush" Color="#666666" />
+        <CornerRadius x:Key="ControlCornerRadius">0</CornerRadius>
+        <CornerRadius x:Key="SliderThumbCornerRadius">0</CornerRadius>
+        <x:Double x:Key="SliderVerticalThumbWidth">20</x:Double>
+        <x:Double x:Key="SliderVerticalThumbHeight">8</x:Double>
+        <x:Double x:Key="SliderTrackThemeHeight">2</x:Double>
+    </Window.Resources>
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Foreground" Value="{StaticResource DebugMutedBrush}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="TextBlock.gear">
+            <Setter Property="FontSize" Value="28" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.direction">
+            <Setter Property="Background" Value="#E1E1E1" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="{StaticResource DebugBorderBrush}" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+        <Style Selector="Button.direction.warning">
+            <Setter Property="BorderBrush" Value="Red" />
+        </Style>
+        <Style Selector="Button.key">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+    </Window.Styles>
+    <Grid Margin="24" RowDefinitions="*,Auto,Auto" RowSpacing="16">
+        <Grid ColumnDefinitions="*,104,*" ColumnSpacing="12">
+            <Border Padding="8,0">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                    <TextBlock Classes="label" Text="牵引" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Row="1" Classes="gear" Text="{Binding PowerLabel}" />
+                    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto" ColumnSpacing="8"
+                          HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <UniformGrid Rows="8" Width="24">
+                            <TextBlock Classes="label" Text="P7" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="P6" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="P5" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="P4" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="P3" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="P2" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="P1" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="0" VerticalAlignment="Center" />
+                        </UniformGrid>
+                        <Slider Grid.Column="1" Width="32" Orientation="Vertical" Minimum="0" Maximum="7"
+                                TickFrequency="1" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True"
+                                Value="{Binding Power, Mode=TwoWay}" AutomationProperties.Name="功率手柄" />
+                    </Grid>
+                </Grid>
+            </Border>
+            <Border Grid.Column="1" BorderBrush="{StaticResource DebugBorderBrush}"
+                    BorderThickness="1,0" Margin="0,8">
+                <StackPanel VerticalAlignment="Center" Spacing="12">
+                    <TextBlock Classes="label" Text="方向" HorizontalAlignment="Center" />
+                    <Button Classes="direction" Classes.warning="{Binding DirectionWarning}"
+                            Content="{Binding DirectionArrow}" Command="{Binding ToggleDirectionCommand}"
+                            FontSize="36" Width="64" Height="64" Padding="0"
+                            HorizontalAlignment="Center" HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center" AutomationProperties.Name="切换牵引方向" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Padding="8,0">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                    <TextBlock Classes="label" Text="制动" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Row="1" Classes="gear" Text="{Binding BrakeLabel}" />
+                    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto" ColumnSpacing="8"
+                          HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <Slider Width="32" Orientation="Vertical" IsDirectionReversed="True"
+                                Minimum="0" Maximum="8" TickFrequency="1" SmallChange="1" LargeChange="1"
+                                IsSnapToTickEnabled="True" Value="{Binding Brake, Mode=TwoWay}"
+                                AutomationProperties.Name="制动手柄" />
+                        <UniformGrid Grid.Column="1" Rows="9" Width="24">
+                            <TextBlock Classes="label" Text="0" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="B1" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="B2" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="B3" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="B4" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="B5" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="B6" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="B7" VerticalAlignment="Center" />
+                            <TextBlock Classes="label" Text="EB" VerticalAlignment="Center" />
+                        </UniformGrid>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+        <TextBlock Grid.Row="1" Classes="label" Text="{Binding EffectivePowerLabel}"
+                   HorizontalAlignment="Center" />
+        <Grid Grid.Row="2" RowDefinitions="Auto,Auto" RowSpacing="8">
+            <UniformGrid Columns="8" Margin="-2,0">
+                <Button Classes="key" Content="F1" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.F1}" />
+                <Button Classes="key" Content="F2" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.F2}" />
+                <Button Classes="key" Content="F3" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.F3}" />
+                <Button Classes="key" Content="F4" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.F4}" />
+                <Button Classes="key" Content="F5" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.F5}" />
+                <Button Classes="key" Content="F6" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.F6}" />
+                <Button Classes="key" Content="F7" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.F7}" />
+                <Button Classes="key" Content="F8" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.F8}" />
+            </UniformGrid>
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*,*,*,*,*,*,1.5*" Margin="-2,0">
+                <Button Grid.Column="0" Classes="key" Content="1" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit1}" />
+                <Button Grid.Column="1" Classes="key" Content="2" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit2}" />
+                <Button Grid.Column="2" Classes="key" Content="3" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit3}" />
+                <Button Grid.Column="3" Classes="key" Content="4" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit4}" />
+                <Button Grid.Column="4" Classes="key" Content="5" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit5}" />
+                <Button Grid.Column="5" Classes="key" Content="6" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit6}" />
+                <Button Grid.Column="6" Classes="key" Content="7" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit7}" />
+                <Button Grid.Column="7" Classes="key" Content="8" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit8}" />
+                <Button Grid.Column="8" Classes="key" Content="9" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit9}" />
+                <Button Grid.Column="9" Classes="key" Content="0" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Digit0}" />
+                <Button Grid.Column="10" Classes="key" Content="警惕" Command="{Binding PressButtonCommand}" CommandParameter="{x:Static ctcs:CtcsButton.Vigilance}" />
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
