@@ -1,4 +1,4 @@
-name: Build CI
+name: Windows CI
 
 on:
   push:
@@ -13,36 +13,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-check:
-    name: Build and check (${{ matrix.platform }})
-    runs-on: ${{ matrix.runner }}
+  windows-x64:
+    name: Build, check and package (Windows x64)
+    runs-on: windows-latest
     timeout-minutes: 20
     env:
-      BUILD_CONFIGURATION: ${{ (matrix.platform == 'macOS' || github.event_name == 'workflow_dispatch') && 'Debug' || 'Release' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: Windows
-            runner: windows-latest
-          - platform: macOS
-            runner: macos-latest
+      # 推送和 PR 构建 Release；手动触发构建 Debug（发布包附带 Debug.dll 插件）。
+      BUILD_CONFIGURATION: ${{ github.event_name == 'workflow_dispatch' && 'Debug' || 'Release' }}
+      RUNTIME_ID: win-x64
 
     steps:
-      - name: Check out source
+      - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Set up .NET SDK
+      - name: Install .NET 10 SDK
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore dependencies
+      - name: Restore NuGet packages
         run: dotnet restore RailDisplay.sln -p:Configuration=${{ env.BUILD_CONFIGURATION }}
 
-      - name: Build solution
+      - name: Build solution (${{ env.BUILD_CONFIGURATION }})
         run: dotnet build RailDisplay.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
       - name: Run Core checks
@@ -51,41 +45,22 @@ jobs:
       - name: Run application checks
         run: dotnet run --project checks/CtcsChecks.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
 
-      - name: Publish Windows package
-        if: matrix.platform == 'Windows'
+      - name: Publish single-file app (${{ env.RUNTIME_ID }})
         shell: pwsh
         run: |
           $version = (dotnet msbuild RailDisplay/RailDisplay.csproj -getProperty:InformationalVersion -p:Configuration=$env:BUILD_CONFIGURATION).Trim()
           if (!$version) { throw 'Could not read InformationalVersion.' }
-          $rid = 'win-x64'
-          $packageName = "RailDisplay-$version-$rid"
+          $packageName = "RailDisplay-$version-$env:RUNTIME_ID"
           $packageDirectory = Join-Path $env:RUNNER_TEMP $packageName
           $archive = Join-Path $env:GITHUB_WORKSPACE "$packageName.zip"
-          dotnet publish RailDisplay/RailDisplay.csproj --configuration $env:BUILD_CONFIGURATION --runtime $rid --self-contained false --output $packageDirectory -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=false -p:IncludeNativeLibrariesForSelfExtract=true
+          dotnet publish RailDisplay/RailDisplay.csproj --configuration $env:BUILD_CONFIGURATION --runtime $env:RUNTIME_ID --self-contained false --output $packageDirectory -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=false -p:IncludeNativeLibrariesForSelfExtract=true
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Compress-Archive -Path $packageDirectory -DestinationPath $archive -CompressionLevel Optimal
 
-      - name: Publish macOS package
-        if: matrix.platform == 'macOS'
-        shell: bash
-        run: |
-          case "$(uname -m)" in
-            arm64) rid=osx-arm64 ;;
-            x86_64) rid=osx-x64 ;;
-            *) echo "Unsupported macOS architecture: $(uname -m)" >&2; exit 1 ;;
-          esac
-          version="$(dotnet msbuild RailDisplay/RailDisplay.csproj -getProperty:InformationalVersion -p:Configuration="$BUILD_CONFIGURATION")"
-          if [[ -z "$version" ]]; then echo 'Could not read InformationalVersion.' >&2; exit 1; fi
-          package_name="RailDisplay-$version-$rid"
-          package_directory="$RUNNER_TEMP/$package_name"
-          archive="$GITHUB_WORKSPACE/$package_name.zip"
-          dotnet publish RailDisplay/RailDisplay.csproj --configuration "$BUILD_CONFIGURATION" --runtime "$rid" --self-contained false --output "$package_directory" -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=false -p:IncludeNativeLibrariesForSelfExtract=true
-          ditto -c -k --sequesterRsrc --keepParent "$package_directory" "$archive"
-
-      - name: Upload package
+      - name: Upload package artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: RailDisplay-${{ matrix.platform }}-${{ env.BUILD_CONFIGURATION }}
+          name: RailDisplay-${{ env.RUNTIME_ID }}-${{ env.BUILD_CONFIGURATION }}
           path: RailDisplay-*.zip
           if-no-files-found: error
           retention-days: 14
