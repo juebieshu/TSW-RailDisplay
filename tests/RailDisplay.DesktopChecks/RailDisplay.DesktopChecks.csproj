@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 需要真实桌面、原生菜单或声卡的手动检查；不由 dotnet test 运行。 -->
+  <ItemGroup>
+    <ProjectReference Include="../../RailDisplay/RailDisplay.csproj" />
+    <ProjectReference Include="../../RailDisplay.Core/RailDisplay.Core.csproj" />
+    <ProjectReference Include="../../RailDisplay.Infrastructure/RailDisplay.Infrastructure.csproj" />
+    <ProjectReference Include="../../RailDisplay.Debug/RailDisplay.Debug.csproj" />
+  </ItemGroup>
+</Project>

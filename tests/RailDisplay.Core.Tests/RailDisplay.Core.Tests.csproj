@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../RailDisplay.Core/RailDisplay.Core.csproj" />
+  </ItemGroup>
+</Project>

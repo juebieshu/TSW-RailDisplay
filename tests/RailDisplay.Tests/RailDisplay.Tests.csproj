@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Skia" Version="12.1.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../RailDisplay/RailDisplay.csproj" />
+    <ProjectReference Include="../../RailDisplay.Core/RailDisplay.Core.csproj" />
+    <ProjectReference Include="../../RailDisplay.Infrastructure/RailDisplay.Infrastructure.csproj" />
+    <ProjectReference Include="../../RailDisplay.Debug/RailDisplay.Debug.csproj" />
+  </ItemGroup>
+</Project>

@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   windows-x64:
-    name: Build, check and package (Windows x64)
+    name: Build, test and package (Windows x64)
     runs-on: windows-latest
     timeout-minutes: 20
     env:
@@ -39,11 +39,17 @@ jobs:
       - name: Build solution (${{ env.BUILD_CONFIGURATION }})
         run: dotnet build RailDisplay.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
-      - name: Run Core checks
-        run: dotnet run --project checks/Core/CoreChecks.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
+      - name: Run tests (${{ env.BUILD_CONFIGURATION }})
+        run: dotnet test RailDisplay.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --logger trx --results-directory TestResults
 
-      - name: Run application checks
-        run: dotnet run --project checks/CtcsChecks.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: TestResults-${{ env.BUILD_CONFIGURATION }}
+          path: TestResults/*.trx
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Publish single-file app (${{ env.RUNTIME_ID }})
         shell: pwsh
