@@ -6,7 +6,7 @@
 
 - RailDisplay 对接游戏中的 DLL，并在客户端内模拟系统运行。业务范围包括根据游戏速度、线路数据等计算监督曲线、允许速度、制动状态，不能将项目仅视作数据展示器。
 - 当前屏型为 `CTCS2_200H`；后续计划支持 LKJ、CTCS3、CTCS2-200C、CIR。计划不等于当前任务，未进入实现范围的功能不预建空模块。
-- 桌面端当前支持目标为 Windows、macOS；用户已取消 Linux 支持，已有 ALSA 代码暂留，不继续新增 Linux 适配。支持窗口缩放，当前优先鼠标操作；触摸为可能的后续需求。
+- 桌面端以 Windows 为主要开发、交付和验证目标；macOS 仅作为附带平台维持兼容，不要求与 Windows 功能对称，也不作为架构设计的基准。用户已取消 Linux 支持，已有 ALSA 代码暂留，不继续新增 Linux 适配。支持窗口缩放，当前优先鼠标操作；触摸为可能的后续需求。
 - 实际音频当前优先 Windows，使用 NAudio 3.1.0；Linux 使用 ALSA 适配，macOS 音频按用户决定暂缓，不影响桌面启动。
 - 游戏 DLL 在局域网广播 `raildisplay` 消息；客户端与 DLL 握手后，DLL 提供局域网 IP，用于区分安装 DLL 的游戏主机。
 - Debug 功能位于 RailDisplay 内，使用两个简单滑块：牵引 `P1—P7`、制动 `B1—B7＋EB`。滑块仅驱动本地模拟和显示，不向游戏发送控制指令。
@@ -34,7 +34,7 @@
 
 编译依赖：`Infrastructure → Core`，`RailDisplay → Core`。桌面项目允许引用 Infrastructure 以完成启动组装，但其类型不得进入 ViewModel、显示控制器或控件。Core 不得反向引用外层项目，项目引用不得成环。
 
-Debug 构建以 `ReferenceOutputAssembly=false` 构建并复制 `RailDisplay.Debug.dll`，桌面代码不引用插件类型，仅按需加载固定入口；DLL 缺失不影响启动，Release 不复制或加载插件。不扩展为通用插件框架。停用释放窗口和模拟任务，不承诺程序集热卸载。
+`RailDisplay.Debug` 项目独立输出为 `Debug.dll`。桌面应用在任意构建配置下扫描应用目录，只识别该固定 DLL；缺失时不显示 Debug 菜单且正常启动，Windows 的 `Always on Top`、`Hide Title Bar` 顶层菜单项仍显示；存在时先加载插件程序集读取 Debug 菜单文字，首次操作才创建插件并初始化样例数据。Debug 构建以 `ReferenceOutputAssembly=false` 构建并复制插件；非 Debug 发布清理复用输出目录中残留的插件、符号及热重载文件，Release 可加载发布后由用户放入目录的 `Debug.dll`。桌面代码不引用插件类型，不扩展为通用插件框架。停用释放窗口和模拟任务，不承诺程序集热卸载。
 
 - 外部数据源、操作发送等需要替换或隔离的能力，通过 Core 所需的窄接口接入；接口定义业务所需能力，不暴露 Socket、Avalonia 对象或协议解析器。
 - 依赖从构造函数传入，在应用启动入口统一组装。禁止在控件或 ViewModel 内创建通信客户端，禁止通过全局可变单例、静态服务容器或查找窗口获取业务依赖。
@@ -92,9 +92,9 @@ Debug 构建以 `ReferenceOutputAssembly=false` 构建并复制 `RailDisplay.Deb
 
 ## 7. 本地 Debug 模拟
 
-- 手柄、假数据和调度位于独立 `RailDisplay.Debug` 项目；主程序只保留原生菜单、加载和启动接线。首次打开 Debug 才加载并初始化样例数据，关闭调试窗口即停止模拟并保留最后状态和手柄，再次打开继续；不得补算暂停时间或重复初始化样例。关闭主窗口释放插件、音频并退出整个程序。
+- 手柄、假数据、菜单文字和调度位于独立 `RailDisplay.Debug` 项目；主程序只保留原生菜单宿主、加载和启动接线。检测到 `Debug.dll` 时加载程序集读取菜单文字，首次打开 Debug 才创建插件并初始化样例数据。关闭调试窗口即停止模拟并保留最后状态和手柄，再次打开继续；不得补算暂停时间或重复初始化样例。关闭主窗口释放插件、音频并退出整个程序。
 - Debug 滑块为离散档位：`P1—P7` 和 `B1—B7＋EB`，仅在 RailDisplay 内驱动本地模拟及显示。
-- Debug 菜单仅包含英文 `Simulation`、`Debug Setting`，不提供强制重绘菜单项。设置窗口编辑目标速度、允许速度（km/h）、目标距离（m），经 Core 校验后从最新快照统一提交；SBI、EBI、TSM 保留现值，自动计算规则待用户提供。手柄窗口下方 19 个实体键已通过插件窄回调接入同一个 `KeyHandle`，命令可用性来自 `CanHandle`；交互状态更新后同步刷新，释放插件时解除宿主订阅。窗口内 F1—F8、主键盘及小键盘数字映射实体键，手柄原快捷键保留，不虚构警惕快捷键。
+- Debug 菜单使用英文根项 `Debug`，其下为 `Simulation`、`Debug Setting`，不提供强制重绘菜单项。Windows 右键菜单始终将灰显的 `Always on Top`、`Hide Title Bar` 作为顶层项显示，暂不接入逻辑；存在 `Debug.dll` 时额外显示 `Debug` 根项。macOS 仅在插件存在时显示 Debug 菜单，不显示这两个 Windows 专属菜单项。设置窗口编辑目标速度、允许速度（km/h）、目标距离（m），经 Core 校验后从最新快照统一提交；SBI、EBI、TSM 保留现值，自动计算规则待用户提供。手柄窗口下方 19 个实体键已通过插件窄回调接入同一个 `KeyHandle`，命令可用性来自 `CanHandle`；交互状态更新后同步刷新，释放插件时解除宿主订阅。窗口内 F1—F8、主键盘及小键盘数字映射实体键，手柄原快捷键保留，不虚构警惕快捷键。
 - Core 的 `CtcsButton` 枚举定义 19 个实体按键，注释记录用户提供的键面名称，枚举数值不是通信协议编号。`CtcsController.KeyHandle` 委托共用 `KeyHandler<TKey,TContext>` 分发；初始化时复制并校验绑定表，拒绝非法键、重复绑定及空处理器。`CanHandle` 是纯查询，与执行使用同一个可用条件，读取最新模式和步骤，不通过试执行判断启用状态；禁用键不触发处理器。处理器异常向调用方传播，业务处理须先校验后提交。
 - 已确认接入既有功能菜单导航：`FunctionKeyMenu` 的 `TargetStep` 和显式 `IsBack` 生成只读 `CtcsNavigationBinding` 配置，App 交给 Core 的 `CtcsNavigationKeys.Create` 创建处理器并注入控制器；Core 不读取桌面菜单或标签。“返回”和“取消”均显式配置为 `Back()`，返回上一层，沿用默认不保留输入，不提交业务数据；不通过显示文字推断动作。确定、删除、数字输入、编组选择、音量/亮度调整、警惕及实际模式、启动、缓解等提交规则继续待确认，相应动作禁用。各模式暂共用同一菜单，模式准入条件仍待用户提供；无参控制器仍为空表。
 - DMI 的 `FunctionKeys` 为 F1—F8 的只读显示快照，按当前步骤映射文字，并从 Core 查询可用性；缺项文字为空，未定义动作在 Debug 禁用。DMI 八个功能格保留原设计坐标；仅无内容的格子通过 `IsEmpty` 使用现有深灰色 `DisabledButtonBrush`，有内容的格子保持原背景，不按动作可用性改变颜色。DMI 整屏只显示，不接受鼠标、触摸或其他点击输入，文字滚动箭头也只显示；按键由 Debug 调用 ViewModel 的统一入口，处理成功后刷新 DMI。
@@ -115,8 +115,8 @@ Debug 构建以 `ReferenceOutputAssembly=false` 构建并复制 `RailDisplay.Deb
 - 界面状态在 UI 线程批量提交；核心与通信不直接操作 Dispatcher、窗口或 ObservableObject。跨线程交付放在桌面适配位置，保持一次展示使用同一批数据。
 - 可以合并高频显示刷新，但不能因此丢弃业务计算所需的输入或离散事件。先区分可替换的最新显示快照与必须处理的业务事件。
 - 计时器、事件订阅、后台任务和位图有明确所有者，在对应生命周期结束时停止、取消、解除订阅或释放。切换页面不得重复订阅；反复缩放不得持续泄漏位图。
-- 桌面代码使用跨平台能力，不在共用路径依赖 Windows 专有接口、硬编码绝对路径或假设某个系统字体必然存在。不可避免的平台差异集中隔离。
-- Debug 菜单使用真正的原生菜单：Windows 使用 Win32 HMENU，位于系统标题栏下；macOS 使用 NativeMenu，位于顶部系统菜单栏。不以 Avalonia 自绘 Menu 替代。平台适配位于桌面 Debug 目录，仅 Debug 构建启用，关闭窗口时释放菜单与订阅。
+- 桌面实现优先满足 Windows 的产品和交互需求；跨平台能力适合时继续复用，Windows 专有实现集中隔离。macOS 适配作为附带兼容层维护，不为追求平台对称而改变 Windows 行为或架构。
+- 原生菜单使用真正的平台菜单：macOS 使用 NativeMenu，在顶部系统菜单栏显示可用的 Debug 菜单；Windows 使用 Win32 HMENU，在窗口非标题栏区域右键时弹出，始终包含灰显的 `Always on Top`、`Hide Title Bar` 顶层项，并在扫描到 `Debug.dll` 时增加 Debug 根项。Windows 标题栏保持系统原样，不以 Avalonia 自绘 Menu 替代。通用 HMENU 实现位于 `RailDisplay/Platform/Windows/Win32Menu.cs`，跨平台应用菜单组装位于 `RailDisplay/Platform/NativeApplicationMenu.cs`；关闭窗口时释放菜单与订阅。
 - macOS 原生根菜单挂载后保持同一实例，释放 Debug 时只移除自身菜单项，避免 Avalonia 原生导出器的菜单实例不匹配异常。
 - XAML 热重载由 Debug 专用 HotAvalonia 与同版本 Avalonia.Markup.Xaml.Loader 负责；MetadataUpdateHandler 和 `ForceRedraw` 只重新布局、绘制和生成像素帧，不重置业务数据或重建声音、模拟实例。
 
@@ -148,7 +148,7 @@ dotnet run --project checks/CtcsChecks.csproj -- --pixels
 - `checks/Core` 只引用 Core，复用 `checks/CTCS/CtcsCoreChecks.cs`；`checks/CTCS` 的显示及能力检查、`checks/Rendering` 的渲染检查由桌面自检入口执行。保持业务检查不依赖 Avalonia 或真实游戏。
 - 通信实现时检查实际协议的坏包、断线、重连及会话切换，使用可控输入，不让日常自检依赖真实游戏或局域网设备。
 - 像素检查需要可用的 Avalonia 图形运行环境。布局和交互变化还需实际显示检查，包括本次相关的窗口大小、缩放与点击位置；自动像素检查不替代所有人工验证。
-- 当前平台通过不代表 Windows 和 macOS 都验证完成。交付说明实际执行的检查、运行平台、结果和未验证部分；环境限制导致未运行时明确说明，不声称通过。
+- Windows 是主要验收平台，交付说明实际执行的检查、运行平台、结果和未验证部分。macOS 作为附带平台单独记录兼容性验证结果；当前平台通过不代表其他平台也已验证。
 - 原生菜单、设置窗口及热重载重绘可单独执行 `dotnet run --project checks/CtcsChecks.csproj -- --debug-ui`，也由 Debug 构建的 `--pixels` 入口执行。需要图形环境；XAML 保存后更新、实际菜单点击和键盘导航仍需运行应用验证。
 - `--debug-ui` 同时检查插件关闭后停止更新、重开保留状态、单窗口与重复释放。`dotnet run --project checks/CtcsChecks.csproj -- --shutdown` 单独以真实桌面生命周期检查主窗口关闭后释放插件并退出整个程序，需要 Debug 构建和图形环境。
 - 音频核心检查位于 `checks/Audio/AudioCoreChecks.cs`，由 Core 与普通检查入口复用；播放适配检查使用可控替身，不依赖声卡。实际音频另执行 `dotnet run --project checks/CtcsChecks.csproj -- --audio`，仅 Windows / 可用 ALSA 的 Linux 支持，macOS 报告未执行。该参数单独运行真实播放检查，不代替普通自检或听感验证。
@@ -158,6 +158,7 @@ dotnet run --project checks/CtcsChecks.csproj -- --pixels
 - 修改前搜索所有相关调用、绑定、测试、配置和资源，明确本次变动到达哪些位置；修根因，不在每个调用处复制补丁。
 - 完成本次涉及职责的整理，无关问题记录后另做。不借小功能或规范文档任务批量重构、改名、升级依赖或调整界面风格。
 - 优先复用现有实现，其次标准库和已安装依赖。新增依赖必须说明实际需求及现有能力不足之处，不为几行代码引入框架。
+- CI 自动触发时 Windows 使用 Release，手动触发时 Windows 使用 Debug；macOS 始终使用 Debug。发布为依赖已安装 .NET 运行时的单文件应用包，文件名为 `RailDisplay-{InformationalVersion}-{RID}.zip`，不捆绑 .NET 运行时。
 - 保持项目现有 C# 命名、可空性和格式约定；命名表达领域含义，注释说明代码本身无法表达的原因、规则依据或已知限制。
 - 不吞异常、不默默回退到看似有效的业务值。错误在能决定处理方式的位置处理，日志提供定位所需上下文，避免逐帧或逐包无节制输出。
 - 完成时简要说明改了什么、为什么、如何验证、剩余限制。更新架构或协议时同步更新本文件中受影响的约束与命令。
@@ -175,8 +176,8 @@ dotnet run --project checks/CtcsChecks.csproj -- --pixels
 - `RailDisplay/Views/`：窗口及平铺的屏型页面；`Controls/CTCS/` 为 CTCS 绘制控件，`Controls/PixelDisplay.cs` 为共享渲染组件。
 - `RailDisplay/Assets/Themes/CTCS/`：CTCS 视觉资源；`RailDisplay.Debug/CTCS/`：本地模拟样例和推进调度。
 - `RailDisplay/App.axaml.cs`：实例组装、初始数据、原生 Debug 菜单动作与退出释放入口；`MainViewModel` 接收 CTCS ViewModel 和设备声音 Core 接口；`HotReloadHandler` 只重绘界面，保留业务数据和声音实例。
-- `RailDisplay/Debug/NativeDebugMenu.cs`、`Win32DebugMenu.cs`：macOS 顶部系统菜单、Windows HMENU 及生命周期；`DebugPluginLoader.cs` 按需加载可选 DLL；`checks/Rendering/DebugUiChecks.cs` 检查菜单动作、重绘、状态保留与插件启停，`ApplicationExitChecks.cs` 检查整程序退出。
-- `RailDisplay.Debug/DebugPlugin.cs`：单窗口、模拟启停与异步释放；`ViewModels/DebugViewModel.cs`、`Views/DebugWindow.axaml`：手柄输入。Debug 构建通过菜单或 F12 首次加载；关闭插件窗口暂停，重开继续；`Core/Controllers/Simulation/TrainMotionSimulation.cs` 计算速度，`RailDisplay.Debug/CTCS/CtcsDebugSimulation.cs` 通过主程序传入的回调提交核心数据。
+- `RailDisplay/Platform/NativeApplicationMenu.cs`、`RailDisplay/Platform/Windows/Win32Menu.cs`：macOS Debug 系统菜单、Windows HMENU 及生命周期；`RailDisplay/Debug/DebugPluginLoader.cs` 按需加载可选 DLL；`checks/Rendering/DebugUiChecks.cs` 检查菜单动作、重绘、状态保留与插件启停，`ApplicationExitChecks.cs` 检查整程序退出。
+- `RailDisplay.Debug/DebugPlugin.cs`：单窗口、模拟启停与异步释放；`ViewModels/DebugViewModel.cs`、`Views/DebugWindow.axaml`：手柄输入。应用目录存在 `Debug.dll` 时可通过原生菜单或 F12 首次加载；关闭插件窗口暂停，重开继续；`Core/Controllers/Simulation/TrainMotionSimulation.cs` 计算速度，`RailDisplay.Debug/CTCS/CtcsDebugSimulation.cs` 通过主程序传入的回调提交核心数据。
 - `checks/`：普通检查与渲染检查入口、`DebugChecks.cs` 手柄及接入检查、`TrainMotionChecks.cs` 速度模拟检查；`checks/Interaction/InteractionChecks.cs` 检查导航、分发、输入保留与模式更新，和速度检查一样由 Core 入口复用；`checks/Core/`：独立核心检查入口。
 - `RailDisplay.Infrastructure/Logging/ApplicationLogging.cs`：本地日志目录、级别、标准输出模板及轮转；`RailDisplay/Logging/AvaloniaLogSink.cs`：框架日志桥接；`Program.Main` 初始化、异常与退出刷新，`App` 注入外层模块；`checks/Logging/LoggingChecks.cs` 由普通入口验证落盘、过滤、上下文、异常及释放。
 - `README.md`：各部分用途、后续修改位置、扩展方法及验证命令。

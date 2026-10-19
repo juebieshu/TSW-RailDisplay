@@ -1,4 +1,3 @@
-#if DEBUG
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -20,13 +19,33 @@ public sealed class DebugPluginLoader(Window owner, CtcsViewModel ctcs,
         Func<CtcsData> readData, Action<CtcsData> updateData, Action<TimeSpan> advanceBrakeWarning,
         Func<CtcsButton, bool> keyHandle, Func<CtcsButton, bool> canHandle, ILoggerFactory loggerFactory);
 
-    private static string PluginPath => Path.Combine(AppContext.BaseDirectory, "RailDisplay.Debug.dll");
-    public bool IsAvailable => File.Exists(PluginPath);
+    private const string PluginFileName = "Debug.dll";
+    private Assembly? _assembly;
+    private static string? FindPluginPath()
+    {
+        foreach (string path in Directory.EnumerateFiles(AppContext.BaseDirectory, "*.dll", SearchOption.TopDirectoryOnly))
+            if (string.Equals(Path.GetFileName(path), PluginFileName, StringComparison.OrdinalIgnoreCase))
+                return path;
+        return null;
+    }
+
+    public bool IsAvailable => FindPluginPath() is not null;
     private Func<Task>? _show;
     private Action? _showSettings;
     private Action? _refreshButtons;
     private IAsyncDisposable? _lifetime;
     private bool _disposed;
+
+    public (string Root, string Simulation, string Settings) GetMenuLabels()
+    {
+        var method = GetPluginType().GetMethod("GetMenuLabels", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new MissingMethodException("Debug 插件缺少 GetMenuLabels 入口。");
+        var labels = method.CreateDelegate<Func<(string Root, string Simulation, string Settings)>>()();
+        if (string.IsNullOrWhiteSpace(labels.Root) || string.IsNullOrWhiteSpace(labels.Simulation) ||
+            string.IsNullOrWhiteSpace(labels.Settings))
+            throw new InvalidDataException("Debug 插件菜单文字不能为空。");
+        return labels;
+    }
 
     public Task ShowAsync()
     {
@@ -45,8 +64,7 @@ public sealed class DebugPluginLoader(Window owner, CtcsViewModel ctcs,
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_show is null)
         {
-            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(PluginPath);
-            var entry = assembly.GetType("RailDisplay.Debug.DebugPlugin", throwOnError: true)!
+            var entry = GetPluginType()
                 .GetMethod("Create", BindingFlags.Public | BindingFlags.Static)
                 ?? throw new MissingMethodException("Debug 插件缺少 Create 入口。");
             (_show, _showSettings, _refreshButtons, _lifetime) = entry.CreateDelegate<CreatePlugin>()(
@@ -55,6 +73,17 @@ public sealed class DebugPluginLoader(Window owner, CtcsViewModel ctcs,
                 loggerFactory ?? NullLoggerFactory.Instance);
             ctcs.PropertyChanged += OnCtcsChanged;
         }
+    }
+
+    private Type GetPluginType()
+    {
+        if (_assembly is null)
+        {
+            string pluginPath = FindPluginPath() ?? throw new FileNotFoundException(
+                "应用目录中没有可加载的 Debug.dll。", Path.Combine(AppContext.BaseDirectory, PluginFileName));
+            _assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(pluginPath);
+        }
+        return _assembly.GetType("RailDisplay.Debug.DebugPlugin", throwOnError: true)!;
     }
 
     private void OnCtcsChanged(object? sender, PropertyChangedEventArgs args)
@@ -73,4 +102,3 @@ public sealed class DebugPluginLoader(Window owner, CtcsViewModel ctcs,
         _refreshButtons = null;
     }
 }
-#endif

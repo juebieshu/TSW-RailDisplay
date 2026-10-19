@@ -64,6 +64,10 @@ sealed class Program
         Avalonia.Logging.Logger.Sink = new AvaloniaLogSink(loggerFactory.CreateLogger("Avalonia"));
         return AppBuilder.Configure(() => new App(loggerFactory))
             .UsePlatformDetect()
+            .With(new Win32PlatformOptions
+            {
+                CompositionMode = new[] { Win32CompositionMode.RedirectionSurface }
+            })
 #if DEBUG
             .WithDeveloperTools()
 #endif

@@ -9,6 +9,7 @@
         Height="480"
         MinWidth="320"
         MinHeight="240"
+        TransparencyLevelHint="None"
         Background="Black">
 
     <ctcs:CTCS2_200H DataContext="{Binding Ctcs}" />

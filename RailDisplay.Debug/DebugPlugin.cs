@@ -26,6 +26,9 @@ public sealed class DebugPlugin : IAsyncDisposable
     private Task _stopping = Task.CompletedTask;
     private bool _disposed;
 
+    public static (string Root, string Simulation, string Settings) GetMenuLabels() =>
+        ("Debug", "Simulation", "Debug Setting");
+
     public DebugPlugin(Window owner, Func<CtcsData> readData, Action<CtcsData> updateData,
         Action<TimeSpan> advanceBrakeWarning, Func<CtcsButton, bool> keyHandle,
         Func<CtcsButton, bool> canHandle, ILoggerFactory? loggerFactory = null)

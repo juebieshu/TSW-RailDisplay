@@ -84,7 +84,7 @@
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
         <Style Selector="Canvas#F > Border.region">
-            <Setter Property="BorderThickness" Value="0,0,2,2"/>
+            <Setter Property="BorderThickness" Value="1,1,1,1"/>
         </Style>
         <Style Selector="Border#E6ToE10, Canvas#E11ToE15 > Border.region, Canvas#E24ToE25 > Border.region">
             <Setter Property="BorderThickness" Value="0"/>
@@ -204,7 +204,7 @@
                             Width="36" Height="36" BorderThickness="0,1,1,1"/>
                     <Border Name="B7" Classes="region" Canvas.Left="244" Canvas.Top="264"
                             Width="36" Height="36" BorderThickness="1">
-                        <TextBlock Text="{Binding ControlModeShortName}"/>
+                        <TextBlock Text="{Binding ControlModeShortName}" FontWeight="Bold"/>
                     </Border>
                 </Canvas>
 

@@ -70,7 +70,7 @@ checks/
 | [Program.Main](RailDisplay/Program.cs)、[App](RailDisplay/App.axaml.cs) | 启动前初始化，记录启动/退出及未处理异常，向音频、Debug 插件和原生菜单注入 Logger；桌面退出后释放工厂并刷新文件。Serilog 自身写入故障输出标准错误，初始化目录失败明确退出，不静默切换目录 |
 | [AvaloniaLogSink](RailDisplay/Logging/AvaloniaLogSink.cs)、[HotReloadHandler](RailDisplay/HotReloadHandler.cs) | 将框架消息与热重载诊断送到同一日志，保留区域、来源及消息参数；调整框架过滤改 `IsEnabled`，调整级别映射改 `ToLogLevel`，同步日志自检 |
 | [DebugPluginLoader](RailDisplay/Debug/DebugPluginLoader.cs)、[DebugPlugin](RailDisplay.Debug/DebugPlugin.cs)、[CtcsDebugSimulation](RailDisplay.Debug/CTCS/CtcsDebugSimulation.cs) | 固定插件入口传入日志工厂，记录初始化、启停、设置窗口及模拟异常。改变入口参数必须同步加载委托与插件 `Create`，运行 `--debug-ui`、`--shutdown` 检查生命周期 |
-| [NativeDebugMenu](RailDisplay/Debug/NativeDebugMenu.cs)、[Win32DebugMenu](RailDisplay/Debug/Win32DebugMenu.cs) | 启动入口传入 Logger，Win32 菜单回滚及释放失败记录错误码，保留原有异常行为；修改后在 Windows 检查原生菜单 |
+| [NativeApplicationMenu](RailDisplay/Platform/NativeApplicationMenu.cs)、[Win32Menu](RailDisplay/Platform/Windows/Win32Menu.cs) | 接收插件提供的 Debug 菜单文字，组装 Debug 根项和 Windows 常驻顶层选项，并管理通用 HMENU 创建、右键弹出、命令分发和释放；改菜单结构看 `NativeApplicationMenu`，改文字看 `DebugPlugin.GetMenuLabels`，改 Windows 菜单行为看 `Win32Menu`，同步 `DebugUiChecks` 并在 Windows 验证 |
 | [DeviceAudioController](RailDisplay.Infrastructure/Controllers/Audio/DeviceAudioController.cs)、[Ctcs2_200HAudioController](RailDisplay.Infrastructure/Controllers/Audio/CTCS/Ctcs2_200HAudioController.cs) | 注入设备 Logger，记录资源加载及播放故障，保留现有异常传播和失败请求行为；新增设备沿用基类接线，运行普通自检的可控音频检查 |
 
 后续需要记录日志的外层模块通过构造函数接收 `ILogger<T>`，由 App 创建对应 Logger；调用使用固定消息模板，例如 `logger.LogError(error, "音频资源加载失败：{SoundName}", name)`。不新增转发用日志接口，不在控件创建日志工厂，不逐帧写速度或重复告警。无参 App 和可选 Logger 参数仅方便设计器与独立检查，实际桌面启动使用已注入的实例。
@@ -127,13 +127,13 @@ checks/
 
 ## 本地 Debug 手柄
 
-本地 Debug 已移入独立的 `RailDisplay.Debug` DLL。Debug 构建会生成并复制 DLL 和调试符号到主程序输出目录，主程序通过“Debug → Simulation”、F12 或“Debug → Debug Setting”首次打开时才加载；不引用插件类型。DLL 不存在时主程序仍能启动，不显示 Debug 菜单。Release 不复制或加载插件，也不包含 Debug 菜单入口。
+本地 Debug 位于独立的 `RailDisplay.Debug` 项目，输出文件名为 `Debug.dll`。Debug 构建会生成并复制 DLL 和调试符号到主程序输出目录；Release 默认不复制插件。应用启动时扫描自身目录，只识别 `Debug.dll`：文件存在时加载程序集读取菜单文字并显示 Debug 入口，首次操作才创建插件并初始化样例数据；文件缺失时 Windows 仍显示 `Always on Top`、`Hide Title Bar` 顶层项。macOS 通过菜单栏 `Debug` 下的 `Simulation`、`Debug Setting` 操作；Windows 在窗口客户区右键打开原生菜单；F12 仍可直接打开模拟窗口。桌面代码不引用插件类型，Release 应用也可加载放在目录中的 `Debug.dll`。
 
 关闭调试窗口立即停止模拟，保留速度、手柄位置和现有业务状态；再次打开后继续，不重复生成样例数据，也不补算暂停时间。关闭主窗口会释放插件、声音并退出整个程序。停用会停止任务和释放窗口；DLL 保留在进程中，不做程序集热卸载或运行中替换。
 
-Windows 通过 Win32 `HMENU` 在系统标题栏下显示传统原生菜单；macOS 通过 `NativeMenu` 显示顶部系统菜单。菜单不进入 CTCS 的 640×480 画面，Windows 首次挂载菜单时补足外框高度。macOS 挂载后保持根菜单实例不变，释放时只移除自己的 Debug 菜单项，避免退出时更新了不匹配的菜单。
+Windows 在窗口非标题栏区域右键时，通过 Win32 `HMENU` 弹出原生上下文菜单。灰显的 `Always on Top`、`Hide Title Bar` 始终作为顶层项显示；存在 `Debug.dll` 时额外显示 `Debug` 根项，其中包含 `Simulation` 和 `Debug Setting`。macOS 通过 `NativeMenu` 在顶部系统菜单栏显示 `Debug` 根项及前两个命令，不显示这两个 Windows 专属菜单项。Windows 标题栏仍由系统管理，菜单不进入 CTCS 的 640×480 画面。macOS 挂载后保持根菜单实例不变，释放时只移除自己的 Debug 菜单项，避免退出时更新了不匹配的菜单。
 
-Debug 菜单使用英文，只保留 `Simulation` 和 `Debug Setting`，不再提供强制重绘菜单项。`Debug Setting` 可编辑目标速度、允许速度（km/h）和目标距离（m）；点击 `Apply` 后从最新快照统一提交，经过 Core 校验。目标速度和目标距离留空表示未提供；目标速度存在时仍须满足 Core 的关联校验。关闭设置窗口不影响正在运行的模拟。SBI、EBI、TSM 暂保留现值，后续依据用户提供的规则自动计算，不在此处虚构公式。
+菜单使用英文，不提供强制重绘菜单项。Windows 的 `Always on Top`、`Hide Title Bar` 暂为灰显顶层占位项，不接入逻辑，且不依赖 `Debug.dll`；macOS 不显示这两个 Windows 专属选项。`Debug Setting` 可编辑目标速度、允许速度（km/h）和目标距离（m）；点击 `Apply` 后从最新快照统一提交，经过 Core 校验。目标速度和目标距离留空表示未提供；目标速度存在时仍须满足 Core 的关联校验。关闭设置窗口不影响正在运行的模拟。SBI、EBI、TSM 暂保留现值，后续依据用户提供的规则自动计算，不在此处虚构公式。
 
 模拟窗口下方第一排为 `F1–F8`，第二排为 `1–9、0、警惕`，19 键均通过 `PressButtonCommand` 交付 `CtcsButton`，调用主程序提供的同一个 `KeyHandle`；未配置的键禁用。Debug 窗口内键盘 F1～F8、主键盘和小键盘数字也映射到对应实体键，已有手柄快捷键保留。数字输入和警惕业务尚未定义，目前禁用；不虚构警惕的键盘快捷键。
 
@@ -164,12 +164,12 @@ Debug 菜单使用英文，只保留 `Simulation` 和 `Debug Setting`，不再�
 | [DebugViewModel](RailDisplay.Debug/ViewModels/DebugViewModel.cs) 的 `Power`、`Brake`、`HandleKey`、`ToggleDirectionCommand` | 输入范围校验、有效功率、换向及键位；修改规则同步更新窗口提示和 DebugChecks |
 | [DebugWindow.axaml](RailDisplay.Debug/Views/DebugWindow.axaml)、[后台代码](RailDisplay.Debug/Views/DebugWindow.axaml.cs) | Win10 式浅色直角布局：两侧手柄、中央换向、大字档位和底部有效功率；不显示标题、顶部说明或键位提示，快捷键保留。尺寸、颜色及外观改 XAML，事件转交在后台代码，不加入速度算法 |
 | [MainWindow.axaml](RailDisplay/Views/MainWindow.axaml) | 仅承载 CTCS 屏幕，不放自绘菜单；调整窗口和屏幕布局在这里 |
-| [NativeDebugMenu](RailDisplay/Debug/NativeDebugMenu.cs)、[Win32DebugMenu](RailDisplay/Debug/Win32DebugMenu.cs) | 原生 Debug 菜单和窗口关闭时的释放；文字、macOS 菜单改前者，Windows 菜单句柄和消息分发改后者；动作由 App 注入，两平台须同步菜单项与 DebugUiChecks |
+| [NativeApplicationMenu](RailDisplay/Platform/NativeApplicationMenu.cs)、[Win32Menu](RailDisplay/Platform/Windows/Win32Menu.cs) | 原生应用菜单和窗口关闭时的释放；Debug 根项及 Windows 顶层选项改前者，Windows HMENU、右键弹出、灰显无动作项、句柄操作和消息分发改后者；Debug 动作由 App 注入，菜单变化同步 `DebugUiChecks`，窗口选项今后接入逻辑时仅修改 Windows 分支 |
 | [TrainMotionSimulation](RailDisplay.Core/Controllers/Simulation/TrainMotionSimulation.cs) 的 `Acceleration`、`Advance` | 唯一速度计算来源、档位和速度系数、分段积分、范围校验；调整目标值或分段改这里，同步 TrainMotionChecks 和本文系数表 |
 | [CtcsDebugSimulation](RailDisplay.Debug/CTCS/CtcsDebugSimulation.cs) 的 `Advance`、`RunAsync` | 读取本地手柄、按实际经过时间推进，调用注入的读取、提交和预警推进入口；不引用桌面 ViewModel。调度调整改这里，不在窗口计算 |
 | [DebugSettingsViewModel](RailDisplay.Debug/ViewModels/DebugSettingsViewModel.cs)、[DebugSettingsWindow.axaml](RailDisplay.Debug/Views/DebugSettingsWindow.axaml) | 三项设置的编辑、解析、错误反馈及原子提交；新增输入同步 Core 校验、窗口绑定和 DebugChecks。布局在 XAML，修改提交行为改 `Apply`，始终保留最新速度及其余状态 |
-| [DebugPlugin](RailDisplay.Debug/DebugPlugin.cs) 的 `Create`、`ShowAsync`、`ShowSettings`、`StopAsync` | 插件入口、单窗口、模拟启停与资源释放；`Create` 接收数据、预警推进、按键处理和可用性查询回调及日志工厂，返回打开动作、按键刷新动作和释放对象。改签名同步宿主加载委托，改按键同步 DebugChecks；运行 `--debug-ui` 和 `--shutdown` 检查生命周期 |
-| [DebugPluginLoader](RailDisplay/Debug/DebugPluginLoader.cs)、[项目配置](RailDisplay/RailDisplay.csproj) | 只加载应用目录内固定的 `RailDisplay.Debug.dll`；构建引用不参与桌面编译，生成后复制插件。入口签名变更须同时更新插件 `Create`、加载器与生命周期检查；新增实际依赖时同步检查发布文件 |
+| [DebugPlugin](RailDisplay.Debug/DebugPlugin.cs) 的 `GetMenuLabels`、`Create`、`ShowAsync`、`ShowSettings`、`StopAsync` | 插件菜单文字、固定入口、单窗口、模拟启停与资源释放；`Create` 接收数据、预警推进、按键处理和可用性查询回调及日志工厂，返回打开动作、按键刷新动作和释放对象。改菜单文字同步 `DebugPluginLoader` 与 `NativeApplicationMenu`；改入口签名同步加载委托与生命周期检查 |
+| [DebugPluginLoader](RailDisplay/Debug/DebugPluginLoader.cs)、[项目配置](RailDisplay/RailDisplay.csproj)、[插件项目配置](RailDisplay.Debug/RailDisplay.Debug.csproj) | 启动时扫描应用目录，只识别 `Debug.dll`，加载程序集读取菜单文字但首次操作才创建插件；构建引用不参与桌面编译，Debug 配置生成并复制插件，非 Debug 发布清理复用输出目录残留的插件、符号及热重载文件；发布后仍可由用户手动放入插件。入口签名变更同步插件 `Create`、加载器与生命周期检查；新增依赖时同步检查发布文件 |
 | [App](RailDisplay/App.axaml.cs) 的 `ShowDebugWindow`、`ShutdownAsync` | 接线、原生菜单与 F12、关闭主窗口退出程序；退出前等待插件和声音释放。菜单栏应用名在 [App.axaml](RailDisplay/App.axaml) 的 `Name` 修改 |
 | [DebugChecks](checks/DebugChecks.cs)、[检查入口](checks/Program.cs) | 正常档位、上下限、非法输入不改变状态、制动覆盖功率及鼠标/键盘共用换向；普通自检自动执行；[TrainMotionChecks](checks/TrainMotionChecks.cs) 由 Core 和桌面入口复用，覆盖全部系数、边界、跨段步长一致性和非法输入。布局与焦点另需实际窗口检查 |
 
@@ -184,7 +184,7 @@ Debug 构建使用 HotAvalonia 3.1.5 监听 `.axaml` 修改，使用与 Avalonia
 | [RailDisplay.csproj](RailDisplay/RailDisplay.csproj) 的 Debug 依赖组 | 热重载库及运行时 XAML 加载器；升级 Avalonia 时同步 Loader 版本，并实际验证保存 XAML 后的更新 |
 | [HotReloadHandler](RailDisplay/HotReloadHandler.cs) 的 `UpdateApplication`、`ForceRedraw` | C# 热更新后重绘所有窗口，保留原 ViewModel 和业务快照；不再提供手动重绘菜单项 |
 | [PixelDisplay](RailDisplay/Controls/PixelDisplay.cs) 的 `ForceRedraw` | 释放旧像素帧并立即生成新帧；修改此路径同步验证原生/像素模式切换及不同窗口尺寸 |
-| [DebugUiChecks](checks/Rendering/DebugUiChecks.cs) | 验证原生菜单动作、重复重绘、布局变化、像素分辨率和业务状态保留；Windows 还检查实际 HMENU 和 WM_COMMAND 分发 |
+| [DebugUiChecks](checks/Rendering/DebugUiChecks.cs) | 验证原生菜单动作、重复重绘、布局变化、像素分辨率和业务状态保留；Windows 还检查不创建标题栏菜单并验证 HMENU 的 WM_COMMAND 分发 |
 
 单独验证菜单、重绘及插件启停：`dotnet run --project checks/CtcsChecks.csproj -- --debug-ui`（Debug 构建，需要图形环境）；`--pixels` 也会先执行这些检查。整程序退出检查单独运行 `dotnet run --project checks/CtcsChecks.csproj -- --shutdown`，实际打开主窗口和插件后关闭主窗口，验证全部窗口关闭且正常退出。实际热重载另需在运行时修改并保存一处 XAML 文字或尺寸，确认显示更新；修改后还原，并检查速度、手柄、菜单仍可使用。自动调用菜单动作不能代替原生菜单鼠标点击、键盘导航和多 DPI 的人工验证。
 
@@ -291,19 +291,12 @@ dotnet run --project checks/CtcsChecks.csproj -- --audio
 
 ### GitHub Actions
 
-[Release CI 工作流](.github/workflows/ci.yml) 在推送、Pull Request 和手动触发时运行，使用 .NET 10，在 `windows-latest` 和 `macos-latest` 上仅构建 Release，共两组任务。文件名使用小写 `ci.yml`，工作流显示为 `Release CI`，任务标识为 `build-and-check`，任务显示为 `Build and check (Windows)`、`Build and check (macOS)`；步骤统一使用英文动词短语，便于从日志定位失败阶段。
+[Build CI 工作流](.github/workflows/ci.yml) 在推送、Pull Request 和手动触发时运行，使用 .NET 10，在 `windows-latest` 和 `macos-latest` 上各执行一组任务。自动触发时 Windows 构建 Release；手动触发时 Windows 构建 Debug；macOS 在所有触发方式下始终构建 Debug。每组按对应配置还原依赖、构建解决方案并运行 Core 与应用自检，构建使用 `--no-restore`，检查使用 `--no-build`。
 
-每组依次执行检出源码、安装 SDK、按 Release 配置还原依赖、构建解决方案、Core 自检、普通自检。构建使用 `--no-restore`，检查使用 `--no-build`，确保后续阶段验证本次构建结果。任一步失败即报告该组失败，但不取消另一平台的检查；每组限时 15 分钟，同一分支或 PR 的新运行会取消尚未完成的旧运行。工作流仅授予 `contents: read`，检出后不保留凭据，所用 Action 固定完整提交 SHA，并以注释记录版本。
+检查通过后，工作流分别为 Windows `win-x64` 和 macOS 当前运行架构发布依赖 .NET 运行时的单文件应用，并压缩为 `RailDisplay-{InformationalVersion}-{RID}.zip`，例如 `RailDisplay-alpha-0.0.14-win-x64.zip`。包不包含 .NET 运行时；Debug 配置包附带 `Debug.dll` 插件，Release 配置包不包含 Debug 插件及热重载文件。使用前需安装匹配版本的 .NET 10 Runtime。Windows 和 macOS 包会作为 14 天保留的 Actions artifact 上传，不创建 GitHub Release。
 
-CI 不执行需要图形环境或声卡的 `--pixels`、`--debug-ui`、`--shutdown`、`--audio`，也不代替实际窗口、原生菜单和听感验证。工作流只构建与检查，不发布安装包或创建 Release。
+任务标识为 `build-and-check`，任务显示为 `Build and check (Windows)`、`Build and check (macOS)`；步骤统一使用英文动词短语，便于从日志定位失败阶段。任一步失败即报告该组失败，但不取消另一平台的检查；每组限时 20 分钟，同一分支或 PR 的新运行会取消尚未完成的旧运行。工作流仅授予 `contents: read`，检出后不保留凭据，所用 Action 固定完整提交 SHA，并以注释记录版本。
 
-后续调整触发方式改工作流的 `on`，调整平台及显示名称改 `strategy.matrix.include`，升级 .NET 目标版本时同步 `dotnet-version` 与各项目的 `TargetFramework`；增加检查改 `steps` 并保持 Release 配置，升级 Action 时核对官方发布并同时更新 SHA 和版本注释，上述变化均同步本节。修改后在本地执行以下命令，再查看 GitHub Actions 中两组任务的结果。Action 用法参考官方 [checkout](https://github.com/actions/checkout) 和 [setup-dotnet](https://github.com/actions/setup-dotnet) 文档。
-
-```sh
-dotnet restore RailDisplay.sln -p:Configuration=Release
-dotnet build RailDisplay.sln --configuration Release --no-restore
-dotnet run --project checks/Core/CoreChecks.csproj --configuration Release --no-build
-dotnet run --project checks/CtcsChecks.csproj --configuration Release --no-build
-```
+CI 不执行需要图形环境或声卡的 `--pixels`、`--debug-ui`、`--shutdown`、`--audio`，也不代替实际窗口、原生菜单和听感验证。后续调整触发方式改工作流的 `on`，调整平台改 `strategy.matrix.include`，更改构建配置或打包方式改对应 `BUILD_CONFIGURATION` 和发布步骤；修改后同步本节。Action 用法参考官方 [checkout](https://github.com/actions/checkout)、[setup-dotnet](https://github.com/actions/setup-dotnet) 和 [upload-artifact](https://github.com/actions/upload-artifact) 文档。
 
 开发约束和交付要求见 [AGENTS.md](AGENTS.md)。

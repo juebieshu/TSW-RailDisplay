@@ -20,6 +20,7 @@ using RailDisplay.Controls;
 using RailDisplay.Core.Controllers.CTCS;
 using RailDisplay.Core.Models.CTCS;
 using RailDisplay.Debug;
+using RailDisplay.Platform;
 using RailDisplay.Models.CTCS;
 using RailDisplay.ViewModels.CTCS;
 using RailDisplay.Debug.ViewModels;
@@ -38,7 +39,8 @@ internal static class DebugUiChecks
         var display = new PixelDisplay { Content = canvas };
         var window = new Window { Content = display, DataContext = model, Width = 640, Height = 480 };
         int opened = 0, settingsOpened = 0;
-        using var menu = new NativeDebugMenu(window, () => opened++, () => settingsOpened++);
+        using var menu = new NativeApplicationMenu(window, () => opened++, () => settingsOpened++,
+            ("Debug", "Simulation", "Debug Setting"));
         try
         {
             window.Show();
@@ -93,9 +95,9 @@ internal static class DebugUiChecks
             else if (OperatingSystem.IsWindows())
             {
                 var hwnd = window.TryGetPlatformHandle()!.Handle;
-                if (GetMenu(hwnd) == IntPtr.Zero)
-                    throw new Exception("Windows must attach an actual HMENU.");
-                SendMessageW(hwnd, 0x111, (IntPtr)(index == 0 ? 0x7101 : 0x7103), IntPtr.Zero);
+                if (GetMenu(hwnd) != IntPtr.Zero)
+                    throw new Exception("Windows Debug actions must use a client-area popup, not a title-bar menu.");
+                SendMessageW(hwnd, 0x111, (IntPtr)(0x7100 + index), IntPtr.Zero);
                 Dispatcher.UIThread.RunJobs();
             }
         }
@@ -111,7 +113,8 @@ internal static class DebugUiChecks
             root.Items.Add(existing);
             NativeMenu.SetMenu(window, root);
         }
-        using var menu = new NativeDebugMenu(window, () => { }, () => { });
+        using var menu = new NativeApplicationMenu(window, () => { }, () => { },
+            ("Debug", "Simulation", "Debug Setting"));
         try
         {
             window.Show();
@@ -122,7 +125,8 @@ internal static class DebugUiChecks
             if (OperatingSystem.IsMacOS() &&
                 (!ReferenceEquals(NativeMenu.GetMenu(window), root) || root.Items.Single() != existing))
                 throw new Exception("Disposing Debug must preserve the existing native menu and its root instance.");
-            using var second = new NativeDebugMenu(window, () => { }, () => { });
+            using var second = new NativeApplicationMenu(window, () => { }, () => { },
+                ("Debug", "Simulation", "Debug Setting"));
             window.Close();
             Dispatcher.UIThread.RunJobs();
             if (OperatingSystem.IsMacOS() &&

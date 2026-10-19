@@ -12,6 +12,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using RailDisplay.Controls;
+using RailDisplay.Controls.CTCS;
 using RailDisplay.Core.Controllers.CTCS;
 using RailDisplay.Core.Models.CTCS;
 using RailDisplay.Debug;

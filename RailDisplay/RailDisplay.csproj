@@ -48,4 +48,11 @@
             Condition="'$(Configuration)' == 'Debug'">
         <Copy SourceFiles="@(DebugPluginFiles)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
     </Target>
+    <Target Name="RemoveDebugArtifactsFromNonDebugPublish" AfterTargets="Publish"
+            Condition="'$(Configuration)' != 'Debug'">
+        <ItemGroup>
+            <DebugPublishArtifacts Include="$(PublishDir)Debug.*;$(PublishDir)RailDisplay.Debug.*;$(PublishDir)HotAvalonia.*;$(PublishDir)Avalonia.Markup.Xaml.Loader.*" />
+        </ItemGroup>
+        <Delete Files="@(DebugPublishArtifacts)" />
+    </Target>
 </Project>

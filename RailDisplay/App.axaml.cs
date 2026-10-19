@@ -11,9 +11,8 @@ using RailDisplay.Core.Controllers.CTCS;
 using RailDisplay.Models.CTCS;
 using RailDisplay.ViewModels.CTCS;
 using RailDisplay.Views;
-#if DEBUG
 using RailDisplay.Debug;
-#endif
+using RailDisplay.Platform;
 using RailDisplay.Infrastructure.Controllers.Audio.CTCS;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -55,9 +54,24 @@ public partial class App : Application
             desktop.MainWindow = mainWindow;
             bool released = false;
             bool shuttingDown = false;
-#if DEBUG
             var debugPlugin = new DebugPluginLoader(mainWindow, viewModel.Ctcs, _loggerFactory);
-            if (debugPlugin.IsAvailable)
+            bool debugPluginFound = debugPlugin.IsAvailable;
+            (string Root, string Simulation, string Settings)? debugMenuLabels = null;
+            if (debugPluginFound)
+            {
+                try
+                {
+                    debugMenuLabels = debugPlugin.GetMenuLabels();
+                }
+                catch (Exception error)
+                {
+                    _logger.LogError(error, "无法读取 Debug 插件菜单");
+                }
+            }
+            bool debugAvailable = debugMenuLabels is not null;
+            Action? openDebug = null;
+            Action? openDebugSettings = null;
+            if (debugAvailable)
             {
                 async void ShowDebugWindow()
                 {
@@ -85,8 +99,8 @@ public partial class App : Application
                         _logger.LogError(error, "无法打开 Debug 设置");
                     }
                 }
-                _ = new NativeDebugMenu(mainWindow, ShowDebugWindow, ShowDebugSettings,
-                    _loggerFactory.CreateLogger<NativeDebugMenu>());
+                openDebug = ShowDebugWindow;
+                openDebugSettings = ShowDebugSettings;
                 mainWindow.AddHandler(Avalonia.Input.InputElement.KeyDownEvent, (_, args) =>
                 {
                     if (args.Key != Key.F12)
@@ -95,9 +109,12 @@ public partial class App : Application
                     args.Handled = true;
                 }, RoutingStrategies.Tunnel);
             }
-            else
+            else if (!debugPluginFound)
                 _logger.LogInformation("未安装可选 Debug 插件");
-#endif
+            if (OperatingSystem.IsWindows() || debugAvailable)
+                _ = new NativeApplicationMenu(mainWindow, openDebug, openDebugSettings,
+                    debugMenuLabels,
+                    _loggerFactory.CreateLogger<NativeApplicationMenu>());
             async Task ShutdownAsync()
             {
                 if (shuttingDown)
@@ -107,7 +124,6 @@ public partial class App : Application
                 int exitCode = 0;
                 try
                 {
-#if DEBUG
                     try
                     {
                         await debugPlugin.DisposeAsync();
@@ -116,9 +132,6 @@ public partial class App : Application
                     {
                         await audio.DisposeAsync();
                     }
-#else
-                    await audio.DisposeAsync();
-#endif
                 }
                 catch (Exception error)
                 {

@@ -36,7 +36,7 @@ internal static class ApplicationExitChecks
             .SetupWithClassicDesktopLifetime(Array.Empty<string>());
         var lifetime = (ClassicDesktopStyleApplicationLifetime)Application.Current!.ApplicationLifetime!;
         var main = lifetime.MainWindow!;
-        bool pluginInstalled = File.Exists(Path.Combine(AppContext.BaseDirectory, "RailDisplay.Debug.dll"));
+        bool pluginInstalled = File.Exists(Path.Combine(AppContext.BaseDirectory, "Debug.dll"));
         Exception? failure = null;
         int exited = 0;
         lifetime.Exit += (_, _) => exited++;

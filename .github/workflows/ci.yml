@@ -1,4 +1,4 @@
-name: Release CI
+name: Build CI
 
 on:
   push:
@@ -16,7 +16,9 @@ jobs:
   build-and-check:
     name: Build and check (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      BUILD_CONFIGURATION: ${{ (matrix.platform == 'macOS' || github.event_name == 'workflow_dispatch') && 'Debug' || 'Release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -37,14 +39,53 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore dependencies (Release)
-        run: dotnet restore RailDisplay.sln -p:Configuration=Release
+      - name: Restore dependencies
+        run: dotnet restore RailDisplay.sln -p:Configuration=${{ env.BUILD_CONFIGURATION }}
 
-      - name: Build solution (Release)
-        run: dotnet build RailDisplay.sln --configuration Release --no-restore
+      - name: Build solution
+        run: dotnet build RailDisplay.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
-      - name: Run Core checks (Release)
-        run: dotnet run --project checks/Core/CoreChecks.csproj --configuration Release --no-build
+      - name: Run Core checks
+        run: dotnet run --project checks/Core/CoreChecks.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
 
-      - name: Run application checks (Release)
-        run: dotnet run --project checks/CtcsChecks.csproj --configuration Release --no-build
+      - name: Run application checks
+        run: dotnet run --project checks/CtcsChecks.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
+
+      - name: Publish Windows package
+        if: matrix.platform == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (dotnet msbuild RailDisplay/RailDisplay.csproj -getProperty:InformationalVersion -p:Configuration=$env:BUILD_CONFIGURATION).Trim()
+          if (!$version) { throw 'Could not read InformationalVersion.' }
+          $rid = 'win-x64'
+          $packageName = "RailDisplay-$version-$rid"
+          $packageDirectory = Join-Path $env:RUNNER_TEMP $packageName
+          $archive = Join-Path $env:GITHUB_WORKSPACE "$packageName.zip"
+          dotnet publish RailDisplay/RailDisplay.csproj --configuration $env:BUILD_CONFIGURATION --runtime $rid --self-contained false --output $packageDirectory -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=false -p:IncludeNativeLibrariesForSelfExtract=true
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path $packageDirectory -DestinationPath $archive -CompressionLevel Optimal
+
+      - name: Publish macOS package
+        if: matrix.platform == 'macOS'
+        shell: bash
+        run: |
+          case "$(uname -m)" in
+            arm64) rid=osx-arm64 ;;
+            x86_64) rid=osx-x64 ;;
+            *) echo "Unsupported macOS architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+          version="$(dotnet msbuild RailDisplay/RailDisplay.csproj -getProperty:InformationalVersion -p:Configuration="$BUILD_CONFIGURATION")"
+          if [[ -z "$version" ]]; then echo 'Could not read InformationalVersion.' >&2; exit 1; fi
+          package_name="RailDisplay-$version-$rid"
+          package_directory="$RUNNER_TEMP/$package_name"
+          archive="$GITHUB_WORKSPACE/$package_name.zip"
+          dotnet publish RailDisplay/RailDisplay.csproj --configuration "$BUILD_CONFIGURATION" --runtime "$rid" --self-contained false --output "$package_directory" -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=false -p:IncludeNativeLibrariesForSelfExtract=true
+          ditto -c -k --sequesterRsrc --keepParent "$package_directory" "$archive"
+
+      - name: Upload package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: RailDisplay-${{ matrix.platform }}-${{ env.BUILD_CONFIGURATION }}
+          path: RailDisplay-*.zip
+          if-no-files-found: error
+          retention-days: 14
